@@ -138,16 +138,19 @@ ksocket_t kaccept(ksocket_t socket, struct sockaddr *address, int *address_len)
 	
 	new_sk->type = sk->type;
 	new_sk->ops = sk->ops;
+	new_sk->sk = NULL;
 	
-	ret = sk->ops->accept(sk, new_sk, 0 /*sk->file->f_flags*/);
+	ret = sk->ops->accept(sk, new_sk, 0 /*sk->file->f_flags*/, true);
 	if (ret < 0)
 		goto error_kaccept;
 	
 	if (address)
 	{
-		ret = new_sk->ops->getname(new_sk, address, address_len, 2);
+		ret = new_sk->ops->getname(new_sk, address, 2);
 		if (ret < 0)
 			goto error_kaccept;
+		if (address_len)
+			*address_len = ret;
 	}
 	
 	return new_sk;
@@ -385,7 +388,9 @@ int kgetsockname(ksocket_t socket, struct sockaddr *address, int *address_len)
 	int ret;
 	
 	sk = (struct socket *)socket;
-	ret = sk->ops->getname(sk, address, address_len, 0);
+	ret = sk->ops->getname(sk, address, 0);
+	if (address_len)
+		*address_len = ret;
 	
 	return ret;
 }
@@ -396,7 +401,9 @@ int kgetpeername(ksocket_t socket, struct sockaddr *address, int *address_len)
 	int ret;
 	
 	sk = (struct socket *)socket;
-	ret = sk->ops->getname(sk, address, address_len, 1);
+	ret = sk->ops->getname(sk, address, 1);
+	if (address_len)
+		*address_len = ret;
 	
 	return ret;
 }
